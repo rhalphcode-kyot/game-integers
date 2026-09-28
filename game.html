@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Integer Quest</title>
+<style>
+*{box-sizing:border-box}
+:root{
+  --bg:#071426;--card:#10233d;--text:#f4f8ff;--muted:#a9bbd2;
+  --primary:#22d3ee;--primary2:#6366f1;--success:#34d399;
+  --danger:#fb7185;--gold:#fbbf24;--border:#284363;
+}
+body{
+  margin:0;min-height:100vh;font-family:Arial,Helvetica,sans-serif;
+  background:radial-gradient(circle at 15% 10%,#123a5b 0,#071426 42%),linear-gradient(135deg,#071426,#15133a);
+  color:var(--text);display:flex;justify-content:center;align-items:center;padding:20px;
+}
+.app{width:min(960px,100%)}
+.screen{display:none}
+.screen.active{display:block;animation:screenIn .28s ease-out}
+@keyframes screenIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.card{
+  background:linear-gradient(145deg,rgba(16,35,61,.97),rgba(13,27,49,.97));border:1px solid var(--border);border-radius:22px;
+  padding:28px;box-shadow:0 18px 55px rgba(0,0,0,.32);
+}
+.logo{font-size:42px;margin:0 0 8px}
+.title{font-size:32px;margin:0 0 8px}
+.subtitle{color:var(--muted);margin-top:0}
+.center{text-align:center}
+.input{
+  width:100%;padding:14px 16px;border:2px solid var(--border);border-radius:12px;
+  font-size:16px;outline:none;margin:10px 0;background:#08182c;color:var(--text);
+}
+.input:focus{border-color:var(--primary)}
+.btn{
+  border:0;border-radius:12px;padding:13px 18px;font-size:16px;font-weight:700;
+  cursor:pointer;background:linear-gradient(135deg,var(--primary),var(--primary2));color:#061322;transition:.18s;
+  box-shadow:0 7px 18px rgba(34,211,238,.2);
+}
+.btn:hover{transform:translateY(-1px);filter:brightness(.96)}
+.btn.secondary{background:#203755;color:#e5eefc;box-shadow:none}
+.btn.success{background:var(--success)}
+.btn.gold{background:var(--gold)}
+.btn.danger{background:var(--danger)}
+.btn.full{width:100%;margin-top:10px}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.topbar{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:20px}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:999px;font-weight:700;background:#173d59;color:#67e8f9}
+.small{font-size:13px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.level{
+  position:relative;text-align:left;padding:20px;border-radius:18px;border:2px solid var(--border);
+  background:linear-gradient(145deg,#132d4b,#10223b);cursor:pointer;transition:.2s;min-height:140px;
+}
+.level:hover:not(.locked){transform:translateY(-3px);box-shadow:0 10px 25px rgba(31,41,55,.10)}
+.level.locked{opacity:.55;cursor:not-allowed}
+.level.easy{border-color:#86efac}.level.moderate{border-color:#fcd34d}.level.hard{border-color:#fca5a5}
+.level .icon{font-size:30px}.level h3{margin:8px 0 4px}.level p{margin:0;color:var(--muted)}
+.status{position:absolute;right:14px;top:14px;font-size:13px;font-weight:700}
+.progress-wrap{height:10px;background:#e5e7eb;border-radius:999px;overflow:hidden;margin-top:10px}
+.progress{height:100%;background:linear-gradient(90deg,var(--primary),var(--primary2));width:0%;transition:.3s}
+.timer-wrap{height:8px;background:#26364d;border-radius:999px;overflow:hidden;margin:18px 0 0}
+.timer-progress{height:100%;width:100%;background:var(--success);transition:width 1s linear,background .2s}
+.timer-progress.warning{background:var(--gold)}
+.timer-progress.danger{background:var(--danger)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0}
+.stat{background:#0b1c32;border:1px solid var(--border);border-radius:14px;padding:12px;text-align:center}
+.stat strong{display:block;font-size:20px;margin-top:3px}
+.question-card{text-align:center;padding:35px 20px}
+.question{font-size:42px;font-weight:800;margin:22px 0}
+.answer-row{display:flex;gap:10px;max-width:480px;margin:0 auto}
+.answer-row .input{margin:0;text-align:center;font-size:22px}
+.feedback{min-height:28px;margin:14px 0;font-weight:700}
+.correct{color:var(--success)}.wrong{color:var(--danger)}
+.history-item{
+  border:1px solid var(--border);border-radius:14px;padding:14px;margin:10px 0;
+  display:flex;justify-content:space-between;gap:10px;align-items:center;
+}
+.map{display:flex;flex-direction:column;gap:8px;margin:20px auto;max-width:650px}
+.map-line{height:24px;width:4px;background:#c7d2fe;margin:auto}
+.bonus{
+  border:2px solid #fbbf24;background:linear-gradient(135deg,#fffbeb,#fef3c7);
+  border-radius:18px;padding:22px;text-align:center;margin-top:18px;
+}
+.result-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:20px 0}
+.result-box{background:#0b1c32;border:1px solid var(--border);padding:18px;border-radius:16px;text-align:center}
+.result-box strong{display:block;font-size:28px}
+.hidden{display:none!important}
+@media(max-width:700px){
+  .grid,.stats,.result-grid{grid-template-columns:1fr}
+  .question{font-size:32px}.answer-row{flex-direction:column}
+  .topbar{align-items:flex-start;flex-direction:column}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<section id="login" class="screen active">
+  <div class="card center">
+    <div class="logo">⚔️</div>
+    <h1 class="title">Integer Quest</h1>
+    <p class="subtitle">Master the numbers. Complete the journey.</p>
+    <input id="nameInput" class="input" placeholder="Enter your name" maxlength="40">
+    <button class="btn full" onclick="startQuest()">Start Quest</button>
+    <div id="savedNotice" class="small" style="margin-top:14px"></div>
+  </div>
+</section>
+
+<section id="instructions" class="screen">
+  <div class="card">
+    <div class="center">
+      <h1 class="title">📖 Instructions</h1>
+      <p class="subtitle">Welcome to Integer Quest!</p>
+    </div>
+    <ul>
+      <li>There are <b>5 main levels</b> with <b>110 questions</b> in total.</li>
+      <li>Level 1: 20 Easy items.</li>
+      <li>Level 2: 20 Easy items.</li>
+      <li>Level 3: 20 Moderate items.</li>
+      <li>Level 4: 20 Moderate items.</li>
+      <li>Level 5: 30 Hard items.</li>
+      <li>You have <b>3 lives</b> for the main quest.</li>
+      <li>Each question has a <b>15-second timer</b>.</li>
+      <li>Correct answer: <b>+10 points</b>.</li>
+      <li>Wrong answer or timeout: <b>-1 life</b>.</li>
+      <li>Your progress is automatically saved after every question.</li>
+      <li>An optional Bonus Round is separate and has <b>no life penalty</b>.</li>
+    </ul>
+    <button class="btn full" onclick="showMainMenu()">Continue to Quest Map</button>
+  </div>
+</section>
+
+<section id="menu" class="screen">
+  <div class="card">
+    <div class="topbar">
+      <div>
+        <h1 class="title">🗺️ Quest Map</h1>
+        <p class="subtitle">Player: <b id="menuName"></b></p>
+      </div>
+      <button class="btn secondary" onclick="showHistory()">📜 History</button>
+    </div>
+    <div id="questMap" class="grid"></div>
+    <div class="bonus">
+      <h2>🎁 Bonus Chamber</h2>
+      <p>Optional challenge. Bonus score is separate and has no penalty.</p>
+      <button class="btn gold" onclick="startBonus()">Enter Bonus Round</button>
+    </div>
+  </div>
+</section>
+
+<section id="game" class="screen">
+  <div class="card">
+    <div class="topbar">
+      <div>
+        <span id="levelBadge" class="badge"></span>
+        <div class="small" id="questionNumber" style="margin-top:7px"></div>
+      </div>
+      <button class="btn secondary" onclick="confirmExit()">Save & Exit</button>
+    </div>
+    <div class="stats">
+      <div class="stat">⭐ Score<strong id="score">0</strong></div>
+      <div class="stat">❤️ Lives<strong id="lives">3</strong></div>
+      <div class="stat">⏱️ Time<strong id="timer">15</strong></div>
+      <div class="stat">✅ Correct<strong id="correct">0</strong></div>
+    </div>
+    <div class="progress-wrap"><div id="progress" class="progress"></div></div>
+    <div class="timer-wrap"><div id="timerProgress" class="timer-progress"></div></div>
+    <div class="question-card">
+      <div id="question" class="question"></div>
+      <div class="answer-row">
+        <input id="answerInput" class="input" type="number" placeholder="Your answer" autocomplete="off">
+        <button id="submitBtn" class="btn" onclick="submitAnswer()">Submit</button>
+      </div>
+      <div id="feedback" class="feedback"></div>
+    </div>
+  </div>
+</section>
+
+<section id="bonusGame" class="screen">
+  <div class="card">
+    <div class="topbar">
+      <div>
+        <span class="badge">🎁 Bonus Round</span>
+        <div class="small" id="bonusNumber" style="margin-top:7px"></div>
+      </div>
+      <button class="btn secondary" onclick="exitBonus()">Leave Bonus</button>
+    </div>
+    <div class="stats">
+      <div class="stat">🎁 Bonus Score<strong id="bonusScore">0</strong></div>
+      <div class="stat">⏱️ Time<strong id="bonusTimer">12</strong></div>
+      <div class="stat">⭐ Streak<strong id="bonusStreak">0</strong></div>
+      <div class="stat">🏆 Best<strong id="bonusBest">0</strong></div>
+    </div>
+    <div class="timer-wrap"><div id="bonusTimerProgress" class="timer-progress"></div></div>
+    <div class="question-card">
+      <div id="bonusQuestion" class="question"></div>
+      <div class="answer-row">
+        <input id="bonusInput" class="input" type="number" placeholder="Your answer" autocomplete="off">
+        <button id="bonusSubmitBtn" class="btn gold" onclick="submitBonus()">Submit</button>
+      </div>
+      <div id="bonusFeedback" class="feedback"></div>
+    </div>
+  </div>
+</section>
+
+<section id="results" class="screen">
+  <div class="card center">
+    <h1 class="title">🏆 Quest Results</h1>
+    <p class="subtitle" id="resultMessage"></p>
+    <div class="result-grid">
+      <div class="result-box">⭐ Score<strong id="finalScore">0</strong></div>
+      <div class="result-box">✅ Correct<strong id="finalCorrect">0</strong></div>
+      <div class="result-box">❌ Incorrect<strong id="finalIncorrect">0</strong></div>
+    </div>
+    <p><b>Completion:</b> <span id="completion">0%</span></p>
+    <p><b>Bonus Score:</b> <span id="finalBonus">0</span></p>
+    <button class="btn full" onclick="showMainMenu()">Back to Quest Map</button>
+  </div>
+</section>
+
+<section id="history" class="screen">
+  <div class="card">
+    <div class="topbar">
+      <div>
+        <h1 class="title">📜 Player History</h1>
+        <p class="subtitle">Saved records for this device/browser.</p>
+      </div>
+      <button class="btn secondary" onclick="showMainMenu()">Back</button>
+    </div>
+    <div id="historyList"></div>
+    <button class="btn danger full" onclick="clearHistory()">Clear Saved History</button>
+  </div>
+</section>
+
+</div>
+
+<script>
+const QUESTIONS = {
+1:[
+["5 + 3",8],["7 + 2",9],["9 − 4",5],["6 − 3",3],["4 + 6",10],
+["8 + 1",9],["10 − 5",5],["3 + 7",10],["12 − 4",8],["5 − 2",3],
+["6 + 4",10],["15 − 5",10],["2 + 9",11],["11 − 3",8],["7 + 5",12],
+["14 − 6",8],["3 + 8",11],["16 − 7",9],["9 + 4",13],["18 − 9",9]
+],
+2:[
+ ["−3 + 5",2],["7 + (−2)",5],["−6 + 4",-2],["9 − 12",-3],["−5 + 8",3],
+ ["6 − 10",-4],["−7 + 3",-4],["11 + (−6)",5],["−4 − 3",-7],["8 + (−5)",3],
+ ["−9 + 6",-3],["13 − 17",-4],["−2 + 9",7],["10 + (−7)",3],["−8 − 2",-10],
+ ["15 + (−9)",6],["−5 + 12",7],["7 − 11",-4],["−10 + 4",-6],["14 − 18",-4]
+],
+3:[
+ ["−12 + 7",-5],["15 + (−9)",6],["−8 − 6",-14],["17 − 25",-8],["−14 + 9",-5],
+ ["22 + (−15)",7],["−11 − 8",-19],["19 − 27",-8],["−16 + 12",-4],["24 + (−18)",6],
+ ["−20 − 5",-25],["31 − 40",-9],["−13 + 21",8],["28 + (−17)",11],["−18 − 7",-25],
+ ["35 − 49",-14],["−25 + 14",-11],["42 + (−26)",16],["−30 − 12",-42],["50 − 63",-13]
+],
+4:[
+ ["−18 + 25 − 7",0],["30 − 45 + 12",-3],["−14 − 9 + 20",-3],["35 + (−18) − 11",6],
+["−27 + 15 − 8",-20],["42 − 19 + (−16)",7],["−32 + 18 + 9",-5],["50 − 27 − 14",9],
+["−21 − 13 + 30",-4],["45 + (−28) − 9",8],["−36 + 22 − 15",-29],["60 − 35 + (−18)",7],
+["−25 + 40 − 17",-2],["38 − 52 + 21",7],["−44 + 19 + 16",-9],["55 − 28 − 31",-4],
+["−50 + 27 − 14",-37],["63 − 45 + (−22)",-4],["−39 − 16 + 40",-15],["72 + (−35) − 28",9]
+],
+5:[
+["−25 + 18 − 32 + 15",-24],["45 − 67 + 29 − 18",-11],["−38 − 24 + 51 − 17",-28],
+["72 + (−35) − 48 + 21",10],["−56 + 27 − 19 + 34",-14],["83 − 45 + (−62) + 18",-6],
+["−41 + 36 − 58 + 22",-41],["95 − 73 − 28 + 41",35],["−67 + 25 + 39 − 54",-57],
+["64 − 89 + 37 − 16",-4],["−75 − 18 + 46 + 29",-18],["108 − 56 + (−73) + 24",3],
+["−82 + 45 − 31 + 17",-51],["91 − 64 + (−38) − 25",-36],["−54 + 72 − 89 + 36",-35],
+["120 − 85 − 47 + 29",17],["−93 + 58 + 24 − 71",-82],["76 − 115 + 43 − 28",-24],
+["−105 + 67 − 42 + 31",-49],["134 − 79 + (−56) − 22",-23],["−48 − 37 + 82 − 19",-22],
+["156 − 98 − 47 + 35",46],["−115 + 73 − 64 + 28",-78],["87 + (−124) + 56 − 31",-12],
+["−136 + 85 − 42 + 67",-26],["145 − 76 + (−93) + 28",4],["−128 − 35 + 91 + 46",-26],
+["175 − 109 − 38 + 52",80],["−150 + 94 − 73 + 41",-88],["200 − 137 + (−84) + 29",8]
+]
+};
+
+const LEVEL_INFO={
+1:{name:"Forest of Integers",difficulty:"Easy",icon:"🌱",count:20},
+2:{name:"Integer Village",difficulty:"Easy",icon:"🟢",count:20},
+3:{name:"Mountain of Signs",difficulty:"Moderate",icon:"⛰️",count:20},
+4:{name:"Temple of Operations",difficulty:"Moderate",icon:"🟡",count:20},
+5:{name:"Final Integer Battle",difficulty:"Hard",icon:"🔥",count:30}
+};
+
+const BONUS_QUESTIONS=[
+["8 + 6",14],["15 − 7",8],
+["−4 + 9",5],["12 + (−8)",4],
+["−9 − 6",-15],["18 − 25",-7],
+["−14 + 22 − 5",3],["30 − 17 + (−8)",5],
+["−25 + 18 − 12",-19],["45 − 68 + 27 − 19",-15]
+];
+
+let player="";
+let state=null;
+let timerId=null;
+let bonusTimerId=null;
+let bonusState=null;
+
+const STORAGE="integerQuestPlayersV1";
+
+function getRecords(){return JSON.parse(localStorage.getItem(STORAGE)||"{}")}
+function saveRecords(r){localStorage.setItem(STORAGE,JSON.stringify(r))}
+function playerKey(){return player.trim().toLowerCase()}
+
+function show(id){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+
+function startQuest(){
+  const name=document.getElementById("nameInput").value.trim();
+  if(!name){alert("Please enter your name.");return}
+  player=name;
+  loadPlayer();
+  document.getElementById("menuName").textContent=player;
+  if(state && !state.finished){
+    document.getElementById("savedNotice").textContent="";
+    showMainMenu();
+  }else{
+    show("instructions");
+  }
+}
+
+function loadPlayer(){
+  const records=getRecords();
+  const old=records[playerKey()];
+  if(old){
+    state=old;
+    state.name=player;
+  }else{
+    state=newState();
+    saveState();
+  }
+}
+
+function newState(){
+  return{
+    name:player,level:1,q:0,score:0,lives:3,correct:0,incorrect:0,
+    completedLevels:[],bonusScore:0,finished:false,lastSaved:new Date().toISOString()
+  }
+}
+
+function saveState(){
+  const records=getRecords();
+  state.lastSaved=new Date().toISOString();
+  records[playerKey()]=state;
+  saveRecords(records);
+}
+
+function showMainMenu(){
+  clearTimers();
+  if(!player){
+    show("login");return;
+  }
+  document.getElementById("menuName").textContent=player;
+  renderMap();
+  show("menu");
+}
+
+function renderMap(){
+  const map=document.getElementById("questMap");
+  map.innerHTML="";
+  for(let i=1;i<=5;i++){
+    const info=LEVEL_INFO[i];
+    const completed=state.completedLevels.includes(i);
+    const unlocked=i===1 || completed || state.completedLevels.includes(i-1) || state.level===i;
+    const current=state.level===i && !completed;
+    const div=document.createElement("div");
+    div.className="level "+(i<=2?"easy":i<=4?"moderate":"hard")+(unlocked?"":" locked");
+    div.innerHTML=`
+      <div class="icon">${info.icon}</div>
+      <div class="status">${completed?"✓ COMPLETE":unlocked?(current?"▶ CURRENT":"OPEN"):"🔒 LOCKED"}</div>
+      <h3>Level ${i} — ${info.difficulty}</h3>
+      <p>${info.name} • ${info.count} items</p>
+      <div class="progress-wrap"><div class="progress" style="width:${completed?100:(current?(state.q/info.count)*100:0)}%"></div></div>
+    `;
+    if(unlocked) div.onclick=()=>startLevel(i);
+    map.appendChild(div);
+  }
+}
+
+function startLevel(level){
+  if(level>1 && !state.completedLevels.includes(level-1) && !state.completedLevels.includes(level)){
+    alert("Complete the previous level first.");
+    return;
+  }
+  state.level=level;
+  if(!state.completedLevels.includes(level) && state.q>=QUESTIONS[level].length) state.q=0;
+  if(level!==state.level || state.q>=QUESTIONS[level].length) state.q=0;
+  saveState();
+  show("game");
+  renderQuestion();
+}
+
+function renderQuestion(){
+  clearTimers();
+  const data=QUESTIONS[state.level];
+  if(state.q>=data.length){completeLevel();return}
+  const q=data[state.q];
+  document.getElementById("levelBadge").textContent=
+    `${LEVEL_INFO[state.level].icon} Level ${state.level} — ${LEVEL_INFO[state.level].difficulty}`;
+  document.getElementById("questionNumber").textContent=
+    `Question ${state.q+1} of ${data.length}`;
+  document.getElementById("question").textContent=q[0]+" = ?";
+  document.getElementById("score").textContent=state.score;
+  document.getElementById("lives").textContent=state.lives;
+  document.getElementById("correct").textContent=state.correct;
+  document.getElementById("progress").style.width=((state.q/data.length)*100)+"%";
+  document.getElementById("feedback").textContent="";
+  document.getElementById("feedback").className="feedback";
+  const input=document.getElementById("answerInput");
+  input.value="";input.disabled=false;
+  document.getElementById("submitBtn").disabled=false;
+  setTimerProgress("timerProgress",1);
+  input.focus();
+  startTimer();
+}
+
+function setTimerProgress(id,ratio){
+  const bar=document.getElementById(id);
+  if(!bar)return;
+  const percent=Math.max(0,Math.min(100,ratio*100));
+  bar.style.width=percent+"%";
+  bar.classList.toggle("warning",ratio<=.5&&ratio>.25);
+  bar.classList.toggle("danger",ratio<=.25);
+}
+
+function startTimer(){
+  let left=15;
+  document.getElementById("timer").textContent=left;
+  setTimerProgress("timerProgress",1);
+  timerId=setInterval(()=>{
+    left--;
+    document.getElementById("timer").textContent=left;
+    setTimerProgress("timerProgress",left/15);
+    if(left<=0){
+      clearInterval(timerId);
+      handleAnswer(null,true);
+    }
+  },1000);
+}
+
+function submitAnswer(){
+  const input=document.getElementById("answerInput");
+  if(input.value.trim()===""){alert("Enter an answer first.");return}
+  handleAnswer(Number(input.value),false);
+}
+
+function handleAnswer(value,timeout){
+  if(document.getElementById("answerInput").disabled)return;
+  clearInterval(timerId);
+  const expected=QUESTIONS[state.level][state.q][1];
+  const correct=value===expected;
+  const input=document.getElementById("answerInput");
+  input.disabled=true;
+  document.getElementById("submitBtn").disabled=true;
+  const feedback=document.getElementById("feedback");
+
+  if(correct){
+    state.score+=10;
+    state.correct++;
+    feedback.textContent="✅ Correct! +10 points";
+    feedback.className="feedback correct";
+  }else{
+    state.lives--;
+    state.incorrect++;
+    feedback.textContent=timeout
+      ? `⏰ Time's up! Correct answer: ${expected}`
+      : `❌ Incorrect. Correct answer: ${expected}`;
+    feedback.className="feedback wrong";
+  }
+
+  saveState();
+  document.getElementById("score").textContent=state.score;
+  document.getElementById("lives").textContent=state.lives;
+  document.getElementById("correct").textContent=state.correct;
+
+  setTimeout(()=>{
+    if(state.lives<=0){finishQuest(false);return}
+    state.q++;
+    saveState();
+    renderQuestion();
+  },700);
+}
+
+function completeLevel(){
+  clearTimers();
+  if(!state.completedLevels.includes(state.level)) state.completedLevels.push(state.level);
+  const finishedAll=state.completedLevels.length===5;
+  saveState();
+
+  if(finishedAll){
+    finishQuest(true);
+    return;
+  }
+
+  const next=state.level+1;
+  const answer=confirm(`🎉 Level ${state.level} complete!\n\nWould you like to try the optional Bonus Round before Level ${next}?`);
+  if(answer) startBonus(next);
+  else{
+    state.level=next;state.q=0;saveState();showMainMenu();
+  }
+}
+
+function startBonus(nextLevel=null){
+  bonusState={index:0,score:0,streak:0,nextLevel};
+  show("bonusGame");
+  document.getElementById("bonusBest").textContent=state.bonusScore;
+  renderBonus();
+}
+
+function renderBonus(){
+  clearTimers();
+  if(bonusState.index>=BONUS_QUESTIONS.length){
+    state.bonusScore+=bonusState.score;
+    saveState();
+    alert(`🎁 Bonus complete!\nBonus Score: ${bonusState.score}`);
+    if(bonusState.nextLevel){
+      state.level=bonusState.nextLevel;state.q=0;saveState();
+    }
+    showMainMenu();
+    return;
+  }
+  const q=BONUS_QUESTIONS[bonusState.index];
+  document.getElementById("bonusNumber").textContent=
+    `Bonus Question ${bonusState.index+1} of ${BONUS_QUESTIONS.length}`;
+  document.getElementById("bonusQuestion").textContent=q[0]+" = ?";
+  document.getElementById("bonusScore").textContent=bonusState.score;
+  document.getElementById("bonusStreak").textContent=bonusState.streak;
+  document.getElementById("bonusFeedback").textContent="";
+  document.getElementById("bonusFeedback").className="feedback";
+  const input=document.getElementById("bonusInput");
+  input.value="";input.disabled=false;input.focus();
+  document.getElementById("bonusSubmitBtn").disabled=false;
+  setTimerProgress("bonusTimerProgress",1);
+  startBonusTimer();
+}
+
+function startBonusTimer(){
+  let left=12;
+  document.getElementById("bonusTimer").textContent=left;
+  setTimerProgress("bonusTimerProgress",1);
+  bonusTimerId=setInterval(()=>{
+    left--;
+    document.getElementById("bonusTimer").textContent=left;
+    setTimerProgress("bonusTimerProgress",left/12);
+    if(left<=0){
+      clearInterval(bonusTimerId);
+      document.getElementById("bonusInput").disabled=true;
+      document.getElementById("bonusSubmitBtn").disabled=true;
+      bonusState.streak=0;
+      document.getElementById("bonusFeedback").textContent="⏰ Time's up! No penalty.";
+      document.getElementById("bonusFeedback").className="feedback wrong";
+      setTimeout(()=>{bonusState.index++;renderBonus()},650);
+    }
+  },1000);
+}
+
+function submitBonus(){
+  const input=document.getElementById("bonusInput");
+  if(input.disabled)return;
+  if(input.value.trim()===""){alert("Enter an answer first.");return}
+  clearInterval(bonusTimerId);
+  const expected=BONUS_QUESTIONS[bonusState.index][1];
+  const feedback=document.getElementById("bonusFeedback");
+  input.disabled=true;
+  document.getElementById("bonusSubmitBtn").disabled=true;
+  if(Number(input.value)===expected){
+    bonusState.score+=20;
+    bonusState.streak++;
+    feedback.textContent="🎉 Correct! +20 bonus points";
+    feedback.className="feedback correct";
+  }else{
+    bonusState.streak=0;
+    feedback.textContent=`❌ Not quite. Correct answer: ${expected}. No penalty.`;
+    feedback.className="feedback wrong";
+  }
+  document.getElementById("bonusScore").textContent=bonusState.score;
+  document.getElementById("bonusStreak").textContent=bonusState.streak;
+  setTimeout(()=>{bonusState.index++;renderBonus()},650);
+}
+
+function exitBonus(){
+  clearTimers();
+  if(bonusState){
+    state.bonusScore+=bonusState.score;
+    if(bonusState.nextLevel){state.level=bonusState.nextLevel;state.q=0}
+    saveState();
+  }
+  showMainMenu();
+}
+
+function finishQuest(completed){
+  clearTimers();
+  state.finished=completed;
+  saveState();
+  document.getElementById("resultMessage").textContent=completed
+    ? `🎉 Amazing work, ${player}! You completed the entire quest.`
+    : `The quest stopped because you ran out of lives. Your record has been saved.`;
+  document.getElementById("finalScore").textContent=state.score;
+  document.getElementById("finalCorrect").textContent=state.correct;
+  document.getElementById("finalIncorrect").textContent=state.incorrect;
+  const answered=state.correct+state.incorrect;
+  document.getElementById("completion").textContent=
+    Math.round((answered/110)*100)+"%";
+  document.getElementById("finalBonus").textContent=state.bonusScore;
+  show("results");
+}
+
+function showHistory(){
+  const list=document.getElementById("historyList");
+  const records=getRecords();
+  const values=Object.values(records).sort((a,b)=>new Date(b.lastSaved)-new Date(a.lastSaved));
+  if(!values.length){
+    list.innerHTML="<p class='small'>No saved records yet.</p>";
+  }else{
+    list.innerHTML=values.map(r=>{
+      const answered=r.correct+r.incorrect;
+      const completion=Math.round((answered/110)*100);
+      return `<div class="history-item">
+        <div>
+          <b>${escapeHtml(r.name)}</b>
+          <div class="small">${r.finished?"Quest Completed":"In Progress"} • Level ${r.level} • ${Math.min(r.q,LEVEL_INFO[r.level]?.count||20)}/${LEVEL_INFO[r.level]?.count||20} answered</div>
+          <div class="small">Last saved: ${new Date(r.lastSaved).toLocaleString()}</div>
+        </div>
+        <div style="text-align:right"><b>⭐ ${r.score}</b><div class="small">${completion}% overall</div></div>
+      </div>`;
+    }).join("");
+  }
+  show("history");
+}
+
+function clearHistory(){
+  if(confirm("Clear all saved player history on this device?")){
+    localStorage.removeItem(STORAGE);
+    alert("Saved history cleared.");
+    showHistory();
+  }
+}
+
+function confirmExit(){
+  saveState();
+  clearTimers();
+  showMainMenu();
+}
+
+function restartCurrentQuest(){
+  state=newState();
+  saveState();
+  showMainMenu();
+}
+
+function clearTimers(){
+  if(timerId){clearInterval(timerId);timerId=null}
+  if(bonusTimerId){clearInterval(bonusTimerId);bonusTimerId=null}
+}
+
+function escapeHtml(text){
+  return String(text).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+}
+
+document.getElementById("answerInput").addEventListener("keydown",e=>{
+  if(e.key==="Enter")submitAnswer();
+});
+document.getElementById("bonusInput").addEventListener("keydown",e=>{
+  if(e.key==="Enter")submitBonus();
+});
+
+window.addEventListener("beforeunload",()=>{if(state)saveState()});
+
+document.getElementById("nameInput").addEventListener("keydown",e=>{
+  if(e.key==="Enter")startQuest();
+});
+
+</script>
+</body>
+</html>
